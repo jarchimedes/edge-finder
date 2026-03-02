@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}My Picks — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>My Picks</h1>
+    <p class="subtitle">Track your bets and measure your edge</p>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.total }}</span>
+        <span class="stat-desc">Resolved</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.wins }}</span>
+        <span class="stat-desc">Wins ({{ "%.0f"|format(stats.wins / stats.total * 100) if stats.total > 0 else 0 }}%)</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number {{ 'text-green' if stats.profit > 0 else 'text-red' if stats.profit < 0 else '' }}">
+            {{ "%+.1f"|format(stats.profit) }}u
+        </span>
+        <span class="stat-desc">P&L</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number {{ 'text-green' if stats.roi > 0 else 'text-red' if stats.roi < 0 else '' }}">
+            {{ "%+.1f"|format(stats.roi) }}%
+        </span>
+        <span class="stat-desc">ROI</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.pending }}</span>
+        <span class="stat-desc">Pending</span>
+    </div>
+</div>
+
+<!-- Add pick form -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="margin-bottom: 0.75rem;">Log a Pick</h3>
+    <form action="/picks/add" method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tournament</label>
+                <input type="text" name="tournament" placeholder="e.g. ATP Doha">
+            </div>
+            <div class="form-group">
+                <label>Tour</label>
+                <select name="tour">
+                    <option value="ATP">ATP</option>
+                    <option value="WTA">WTA</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Surface</label>
+                <select name="surface">
+                    <option value="Hard">Hard</option>
+                    <option value="Clay">Clay</option>
+                    <option value="Grass">Grass</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="match_date">
+            </div>
+            <div class="form-group">
+                <label>Player A</label>
+                <input type="text" name="player_a" placeholder="e.g. Rublev">
+            </div>
+            <div class="form-group">
+                <label>Player B</label>
+                <input type="text" name="player_b" placeholder="e.g. Khachanov">
+            </div>
+            <div class="form-group">
+                <label>Bet Type</label>
+                <select name="bet_type">
+                    <option value="ML">Moneyline</option>
+                    <option value="spread">Game Spread</option>
+                    <option value="set_spread">Set Spread</option>
+                    <option value="total">Total Games</option>
+                    <option value="parlay">Parlay</option>
+                    <option value="prop">Prop</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="bet_description" placeholder="e.g. Rublev ML / Khachanov -1.5 sets">
+            </div>
+            <div class="form-group">
+                <label>Odds (decimal)</label>
+                <input type="text" name="odds" placeholder="e.g. 1.96">
+            </div>
+            <div class="form-group">
+                <label>Units</label>
+                <input type="text" name="units" value="1" placeholder="e.g. 2">
+            </div>
+            <div class="form-group">
+                <label>Source</label>
+                <select name="source">
+                    <option value="self">My Pick</option>
+                    <option value="ltg">LeTennisGoat</option>
+                    <option value="model">Model</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <input type="text" name="notes" placeholder="Why this pick?">
+            </div>
+        </div>
+        <button type="submit" style="margin-top: 0.75rem;">Log Pick</button>
+    </form>
+</div>
+
+<!-- Picks list -->
+{% for pick in picks %}
+<div class="pick-row {{ pick.result }}">
+    <div class="pick-main">
+        <div class="pick-header">
+            <span class="pick-type-tag">{{ pick.bet_type }}</span>
+            <span class="pick-units">{{ pick.units }}u</span>
+            <span class="pick-tournament">{{ pick.tournament }}</span>
+            <span class="pick-surface surface-tag surface-{{ pick.surface|lower|default('hard') }}">{{ pick.surface }}</span>
+            {% if pick.source and pick.source != 'self' %}
+            <span class="pick-source">via {{ pick.source }}</span>
+            {% endif %}
+        </div>
+        <div class="pick-body">
+            <span class="pick-description">{{ pick.bet_description or (pick.player_a + " vs " + pick.player_b) }}</span>
+            <span class="pick-odds">@ {{ "%.2f"|format(pick.odds) }}</span>
+        </div>
+        {% if pick.notes %}
+        <div class="pick-notes">{{ pick.notes }}</div>
+        {% endif %}
+    </div>
+    <div class="pick-result">
+        {% if pick.result == 'pending' %}
+        <form action="/picks/{{ pick.id }}/resolve" method="POST" class="resolve-form">
+            <button name="result" value="win" class="btn btn-sm btn-green">W</button>
+            <button name="result" value="loss" class="btn btn-sm btn-red">L</button>
+            <button name="result" value="push" class="btn btn-sm btn-ghost">Push</button>
+            <button name="result" value="void" class="btn btn-sm btn-ghost">Void</button>
+        </form>
+        {% elif pick.result == 'win' %}
+        <span class="result-tag result-win">+{{ "%.1f"|format(pick.profit) }}u</span>
+        {% elif pick.result == 'loss' %}
+        <span class="result-tag result-loss">{{ "%.1f"|format(pick.profit) }}u</span>
+        {% elif pick.result == 'push' %}
+        <span class="result-tag result-push">Push</span>
+        {% else %}
+        <span class="result-tag result-void">Void</span>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+{% if not picks %}
+<div class="empty-state">
+    <p>No picks logged yet.</p>
+    <p class="hint">Start tracking your bets above.</p>
+</div>
+{% endif %}
+{% endblock %}

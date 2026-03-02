@@ -1,0 +1,29 @@
+# Database - too large for git, seeded separately
+tennis.db
+
+# Raw data repos - not needed in prod
+tennis_atp/
+tennis_wta/
+tennis_MatchChartingProject/
+tennis_pointbypoint/
+tennis_slam_pointbypoint/
+odds_data/
+
+# Backtest outputs
+backtest_results.csv
+backtest_v2_results.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+auto_update.log

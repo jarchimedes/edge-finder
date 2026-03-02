@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}All Matches — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>All Matches</h1>
+    <p class="subtitle">Every match with odds today · <a href="/" style="color:var(--accent);">← Back to signals</a></p>
+</div>
+
+{% for tourney in tournaments %}
+<div class="tournament-section">
+    <div class="tournament-header">
+        <span class="tour-tag tour-{{ tourney.tour|lower }}">{{ tourney.tour }}</span>
+        <span class="tier-tag">{{ tourney.tier }}</span>
+        <h2>{{ tourney.title }}</h2>
+    </div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Player A</th><th>Odds</th><th>Player B</th><th>Odds</th></tr></thead>
+            <tbody>
+            {% for m in tourney.matches %}
+            <tr>
+                <td>{{ m.player_a }}</td>
+                <td class="elo-val">{{ m.odds_a_am }} ({{ "%.2f"|format(m.odds_a) }})</td>
+                <td>{{ m.player_b }}</td>
+                <td class="elo-val">{{ m.odds_b_am }} ({{ "%.2f"|format(m.odds_b) }})</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+{% if not tournaments %}
+<div class="empty-state"><p>No active matches found.</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Results — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Recent Results</h1>
+</div>
+
+<div class="toggle-group">
+    <a href="/results?tour=all" class="{{ 'active' if tour == 'all' }}">All</a>
+    <a href="/results?tour=atp" class="{{ 'active' if tour == 'atp' }}">ATP</a>
+    <a href="/results?tour=wta" class="{{ 'active' if tour == 'wta' }}">WTA</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Tour</th>
+                <th>Date</th>
+                <th>Tournament</th>
+                <th>Surface</th>
+                <th>Round</th>
+                <th>Winner</th>
+                <th>Loser</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in matches %}
+            <tr>
+                <td><span class="tour-tag tour-{{ m.tour|lower }}">{{ m.tour }}</span></td>
+                <td style="white-space:nowrap;">{{ m.date }}</td>
+                <td>{{ m.tourney }}</td>
+                <td><span class="surface-tag surface-{{ m.surface|lower }}">{{ m.surface }}</span></td>
+                <td>{{ m.round }}</td>
+                <td class="win-tag">{{ m.winner }}</td>
+                <td>{{ m.loser }}</td>
+                <td class="elo-val">{{ m.score }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tennis Edge Finder{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">🎾 Edge Finder</a>
+        <div class="nav-links">
+            <a href="/" class="{{ 'active' if page == 'home' }}">Signals</a>
+            <a href="/picks" class="{{ 'active' if page == 'picks' }}">My Picks</a>
+            <a href="/matchup" class="{{ 'active' if page == 'matchup' }}">Matchup Tool</a>
+            <a href="/rankings" class="{{ 'active' if page == 'rankings' }}">Elo Rankings</a>
+            <a href="/results" class="{{ 'active' if page == 'results' }}">Results</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

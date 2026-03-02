@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Elo Rankings — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Elo Rankings</h1>
+</div>
+
+<div class="toggle-group">
+    <a href="/rankings?tour=atp" class="{{ 'active' if tour == 'atp' }}">ATP</a>
+    <a href="/rankings?tour=wta" class="{{ 'active' if tour == 'wta' }}">WTA</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:50px;">#</th>
+                <th>Player</th>
+                <th>Overall</th>
+                <th>Hard</th>
+                <th>Clay</th>
+                <th>Grass</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in players[:100] %}
+            <tr>
+                <td style="color:var(--text2);">{{ loop.index }}</td>
+                <td><a href="/matchup?a={{ p.player_name|urlencode }}&tour={{ tour }}" style="color:var(--text); text-decoration:none;">{{ p.player_name }}</a></td>
+                <td class="elo-val">{{ "%.0f"|format(p.elo_overall) }}</td>
+                <td class="elo-val">{{ "%.0f"|format(p.elo_hard) }}</td>
+                <td class="elo-val">{{ "%.0f"|format(p.elo_clay) }}</td>
+                <td class="elo-val">{{ "%.0f"|format(p.elo_grass) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

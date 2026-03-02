@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Daily Briefing — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🎾 Daily Briefing</h1>
+    <p class="subtitle">{{ today }} · {{ signals|length }} match{{ 'es' if signals|length != 1 }} with signals · <a href="/all" style="color:var(--accent);">View all matches →</a></p>
+</div>
+
+{% if not signals %}
+<div class="empty-state">
+    <p>No strong signals right now.</p>
+    <p class="hint">Either no matches are live, or nothing interesting is flagged. Check back closer to match time.</p>
+</div>
+{% endif %}
+
+{% for s in signals %}
+<div class="signal-card">
+    <!-- Header -->
+    <div class="signal-header">
+        <div class="signal-tags">
+            <span class="tour-tag tour-{{ s.tour|lower }}">{{ s.tour }}</span>
+            <span class="tier-tag tier-{{ s.tier|lower|replace(' ', '-')|replace('/', '-') }}">{{ s.tier }}</span>
+            <span class="surface-tag surface-{{ s.surface|lower }}">{{ s.surface }}</span>
+            <span class="tournament-name">{{ s.tournament }}</span>
+        </div>
+        <div class="signal-score">
+            <span class="score-badge {% if s.signal.score >= 30 %}score-hot{% elif s.signal.score >= 20 %}score-warm{% else %}score-mild{% endif %}">
+                {{ "%.0f"|format(s.signal.score) }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Matchup -->
+    <div class="signal-matchup">
+        <div class="signal-player {% if s.signal.edge_player == s.player_a %}edge-highlight{% endif %}">
+            <span class="player-name">{{ s.player_a }}</span>
+            <span class="player-meta">{% if s.rank_a %}#{{ s.rank_a }}{% endif %} {% if s.elo_a != "—" %}· Elo {{ s.elo_a }}{% endif %}</span>
+            <div class="odds-row">
+                <span class="odds-main">{{ s.odds_a_am }}</span>
+                <span class="odds-dec">({{ "%.2f"|format(s.odds_a) }})</span>
+                {% if s.best_a and s.best_a.price > s.odds_a + 0.02 %}
+                <span class="best-line">Best: {{ s.best_a_am }} @ {{ s.best_a_book }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="signal-vs">VS</div>
+        <div class="signal-player right {% if s.signal.edge_player == s.player_b %}edge-highlight{% endif %}">
+            <span class="player-name">{{ s.player_b }}</span>
+            <span class="player-meta">{% if s.rank_b %}#{{ s.rank_b }}{% endif %} {% if s.elo_b != "—" %}· Elo {{ s.elo_b }}{% endif %}</span>
+            <div class="odds-row">
+                <span class="odds-main">{{ s.odds_b_am }}</span>
+                <span class="odds-dec">({{ "%.2f"|format(s.odds_b) }})</span>
+                {% if s.best_b and s.best_b.price > s.odds_b + 0.02 %}
+                <span class="best-line">Best: {{ s.best_b_am }} @ {{ s.best_b_book }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Edge callout -->
+    {% if s.signal.edge_player %}
+    <div class="edge-callout edge-{{ s.signal.edge_type }}">
+        <span class="edge-icon">{% if s.signal.edge_type == 'strong' %}🔥{% elif s.signal.edge_type == 'moderate' %}📊{% else %}👀{% endif %}</span>
+        <span class="edge-text">{{ s.signal.edge_type|capitalize }} lean: <strong>{{ s.signal.edge_player }}</strong></span>
+    </div>
+    {% endif %}
+
+    <!-- Signals / reasoning -->
+    <div class="signal-reasoning">
+        {% for msg in s.signal.signals %}
+        <div class="reason-line">
+            <span class="reason-bullet">›</span>
+            <span>{{ msg }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Flags -->
+    {% if s.signal.flags %}
+    <div class="signal-flags">
+        {% for flag in s.signal.flags %}
+        <span class="flag-tag">⚠️ {{ flag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Bet angles -->
+    {% if s.signal.bet_angles %}
+    <div class="bet-angles">
+        <div class="angles-label">Bet Angles</div>
+        {% for angle in s.signal.bet_angles %}
+        <div class="angle-line">{{ angle }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Alt markets -->
+    {% if s.spreads or s.totals %}
+    <div class="signal-alts">
+        {% for sp in s.spreads %}
+        <span class="alt-chip">{{ sp.player.split()[-1] }} {{ "%+.1f"|format(sp.point) }} @ {{ "%.2f"|format(sp.price) }}</span>
+        {% endfor %}
+        {% for t in s.totals %}
+        <span class="alt-chip">{{ t.label }} {{ t.point }} @ {{ "%.2f"|format(t.price) }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Form dots -->
+    <div class="signal-form">
+        <div class="form-row-compact">
+            <span class="form-label">{{ s.player_a.split()[-1] }}</span>
+            <span class="streak-mini {% if s.signal.streak_a.type == 'W' and s.signal.streak_a.count >= 3 %}streak-hot{% elif s.signal.streak_a.type == 'L' and s.signal.streak_a.count >= 2 %}streak-cold{% endif %}">
+                {{ s.signal.streak_a.type }}{{ s.signal.streak_a.count }}
+            </span>
+            <span class="form-dots">
+                {% for f in s.signal.form_a %}
+                <span class="dot {{ 'dot-w' if f.result == 'W' else 'dot-l' }}" title="{{ f.result }} vs {{ f.opponent }} ({{ f.surface }}) {{ f.score }}">{{ f.result }}</span>
+                {% endfor %}
+            </span>
+        </div>
+        <div class="form-row-compact">
+            <span class="form-label">{{ s.player_b.split()[-1] }}</span>
+            <span class="streak-mini {% if s.signal.streak_b.type == 'W' and s.signal.streak_b.count >= 3 %}streak-hot{% elif s.signal.streak_b.type == 'L' and s.signal.streak_b.count >= 2 %}streak-cold{% endif %}">
+                {{ s.signal.streak_b.type }}{{ s.signal.streak_b.count }}
+            </span>
+            <span class="form-dots">
+                {% for f in s.signal.form_b %}
+                <span class="dot {{ 'dot-w' if f.result == 'W' else 'dot-l' }}" title="{{ f.result }} vs {{ f.opponent }} ({{ f.surface }}) {{ f.score }}">{{ f.result }}</span>
+                {% endfor %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="signal-actions">
+        <a href="/matchup?a={{ s.name_a_db|urlencode }}&b={{ s.name_b_db|urlencode }}&tour={{ s.tour|lower }}" class="btn btn-sm btn-ghost">Deep Dive →</a>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Matchup Tool — Tennis Edge Finder{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Matchup Tool</h1>
+    <p class="subtitle">Deep dive into any player matchup</p>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+    <form action="/matchup" method="GET">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Player A</label>
+                <input type="text" name="a" value="{{ a }}" placeholder="e.g. Sinner">
+            </div>
+            <div class="form-group">
+                <label>Player B</label>
+                <input type="text" name="b" value="{{ b }}" placeholder="e.g. Djokovic">
+            </div>
+            <div class="form-group">
+                <label>Surface</label>
+                <select name="surface">
+                    <option value="Hard" {{ 'selected' if surface == 'Hard' }}>Hard</option>
+                    <option value="Clay" {{ 'selected' if surface == 'Clay' }}>Clay</option>
+                    <option value="Grass" {{ 'selected' if surface == 'Grass' }}>Grass</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tour</label>
+                <select name="tour">
+                    <option value="atp" {{ 'selected' if tour == 'atp' }}>ATP</option>
+                    <option value="wta" {{ 'selected' if tour == 'wta' }}>WTA</option>
+                </select>
+            </div>
+            <button type="submit">Analyze</button>
+        </div>
+    </form>
+</div>
+
+{% if error %}
+<div class="card" style="border-color: var(--red); color: var(--red);">{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="elo-comparison">
+    <div class="elo-card">
+        <h3>{{ result.name_a }}</h3>
+        <div class="elo-row"><span class="label">Overall</span><span class="value">{{ "%.0f"|format(result.elo_a.overall) }}</span></div>
+        <div class="elo-row"><span class="label">Hard</span><span class="value">{{ "%.0f"|format(result.elo_a.hard) }}</span></div>
+        <div class="elo-row"><span class="label">Clay</span><span class="value">{{ "%.0f"|format(result.elo_a.clay) }}</span></div>
+        <div class="elo-row"><span class="label">Grass</span><span class="value">{{ "%.0f"|format(result.elo_a.grass) }}</span></div>
+        {% if result.streak_a %}
+        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_a.startswith('W') else 'streak-cold' }}">{{ result.streak_a }}</span></div>
+        {% endif %}
+    </div>
+    <div class="vs-divider">VS</div>
+    <div class="elo-card">
+        <h3>{{ result.name_b }}</h3>
+        <div class="elo-row"><span class="label">Overall</span><span class="value">{{ "%.0f"|format(result.elo_b.overall) }}</span></div>
+        <div class="elo-row"><span class="label">Hard</span><span class="value">{{ "%.0f"|format(result.elo_b.hard) }}</span></div>
+        <div class="elo-row"><span class="label">Clay</span><span class="value">{{ "%.0f"|format(result.elo_b.clay) }}</span></div>
+        <div class="elo-row"><span class="label">Grass</span><span class="value">{{ "%.0f"|format(result.elo_b.grass) }}</span></div>
+        {% if result.streak_b %}
+        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_b.startswith('W') else 'streak-cold' }}">{{ result.streak_b }}</span></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Probability bars -->
+<div class="card" style="margin-bottom:1rem;">
+    <div class="intel-label">Win Probability — {{ surface }}</div>
+    <div class="prob-bar" style="margin-top:0.5rem;">
+        <div class="side-a" style="width:{{ (result.prob_blended * 100)|round }}%;">{{ result.name_a.split()[-1] }} {{ "%.1f"|format(result.prob_blended * 100) }}%</div>
+        <div class="side-b">{{ result.name_b.split()[-1] }} {{ "%.1f"|format((1 - result.prob_blended) * 100) }}%</div>
+    </div>
+    <div style="font-size:0.78rem; color:var(--text3); margin-top:0.25rem;">Blended: 70% {{ surface }} Elo / 30% Overall Elo</div>
+</div>
+
+<!-- H2H -->
+<div class="card" style="margin-bottom:1rem;">
+    <h3 style="margin-bottom:0.5rem;">Head to Head: {{ result.h2h_a }} – {{ result.h2h_b }}</h3>
+    {% if result.h2h_meetings %}
+    <table>
+        <thead><tr><th>Date</th><th>Tournament</th><th>Surface</th><th>Winner</th><th>Score</th></tr></thead>
+        <tbody>
+        {% for m in result.h2h_meetings %}
+        <tr>
+            <td>{{ m.date }}</td>
+            <td>{{ m.tourney }}</td>
+            <td><span class="surface-tag surface-{{ m.surface|lower }}">{{ m.surface }}</span></td>
+            <td class="{{ 'win-tag' if m.winner == result.name_a else '' }}">{{ m.winner }}</td>
+            <td class="elo-val">{{ m.score }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text2);">No previous meetings found.</p>
+    {% endif %}
+</div>
+
+<!-- Form -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div class="card">
+        <h3 style="margin-bottom:0.5rem;">{{ result.name_a }} — Recent Form</h3>
+        <table>
+            <thead><tr><th></th><th>Opponent</th><th>Surface</th><th>Score</th></tr></thead>
+            <tbody>
+            {% for f in result.form_a %}
+            <tr>
+                <td><span class="{{ 'win-tag' if f.result == 'W' else 'loss-tag' }}">{{ f.result }}</span></td>
+                <td>{{ f.opponent }} <span style="color:var(--text3);">(#{{ f.opp_rank }})</span></td>
+                <td><span class="surface-tag surface-{{ f.surface|lower }}">{{ f.surface }}</span></td>
+                <td class="elo-val">{{ f.score }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h3 style="margin-bottom:0.5rem;">{{ result.name_b }} — Recent Form</h3>
+        <table>
+            <thead><tr><th></th><th>Opponent</th><th>Surface</th><th>Score</th></tr></thead>
+            <tbody>
+            {% for f in result.form_b %}
+            <tr>
+                <td><span class="{{ 'win-tag' if f.result == 'W' else 'loss-tag' }}">{{ f.result }}</span></td>
+                <td>{{ f.opponent }} <span style="color:var(--text3);">(#{{ f.opp_rank }})</span></td>
+                <td><span class="surface-tag surface-{{ f.surface|lower }}">{{ f.surface }}</span></td>
+                <td class="elo-val">{{ f.score }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
