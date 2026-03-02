@@ -291,7 +291,7 @@ def _find_player_name(conn, api_name, match_table):
         return None
     # Direct match
     row = conn.execute(
-        f"SELECT winner_name FROM {match_table} WHERE winner_name = ? COLLATE NOCASE LIMIT 1",
+        f"SELECT winner_name FROM {match_table} WHERE LOWER(winner_name) = LOWER(%s) LIMIT 1",
         (api_name,)
     ).fetchone()
     if row:
@@ -302,7 +302,7 @@ def _find_player_name(conn, api_name, match_table):
     if parts:
         last = parts[-1]
         rows = conn.execute(
-            f"SELECT winner_name FROM {match_table} WHERE winner_name LIKE ? COLLATE NOCASE GROUP BY winner_name",
+            f"SELECT winner_name FROM {match_table} WHERE winner_name LIKE %s COLLATE NOCASE GROUP BY winner_name",
             (f"%{last}%",)
         ).fetchall()
         if len(rows) == 1:
@@ -330,9 +330,9 @@ def _get_form(conn, player_name, match_table, n=10):
                    winner_name, loser_name, winner_rank, loser_rank, minutes,
                    best_of
             FROM (
-                SELECT * FROM {match_table} WHERE winner_name = ?
+                SELECT * FROM {match_table} WHERE winner_name = %s
                 UNION ALL
-                SELECT * FROM {match_table} WHERE loser_name = ?
+                SELECT * FROM {match_table} WHERE loser_name = %s
             )
             ORDER BY tourney_date DESC, CAST(match_num AS INTEGER) DESC
             LIMIT ?""",
@@ -428,8 +428,8 @@ def _head_to_head(conn, name_a, name_b, match_table):
         f"""SELECT tourney_name, surface, tourney_date, round, score,
                    winner_name, loser_name
             FROM {match_table}
-            WHERE (winner_name = ? AND loser_name = ?)
-               OR (winner_name = ? AND loser_name = ?)
+            WHERE (winner_name = %s AND loser_name = %s)
+               OR (winner_name = %s AND loser_name = %s)
             ORDER BY tourney_date DESC""",
         (name_a, name_b, name_b, name_a),
     ).fetchall()

@@ -212,12 +212,12 @@ def format_date(d):
 
 def find_player_elo(conn, name, elo_table):
     row = conn.execute(
-        f"SELECT * FROM {elo_table} WHERE player_name = ? COLLATE NOCASE", (name,)
+        f"SELECT * FROM {elo_table} WHERE LOWER(player_name) = LOWER(%s)", (name,)
     ).fetchone()
     if row:
         return row
     rows = conn.execute(
-        f"SELECT * FROM {elo_table} WHERE player_name LIKE ? COLLATE NOCASE",
+        f"SELECT * FROM {elo_table} WHERE LOWER(player_name) LIKE LOWER(%s)",
         (f"%{name}%",),
     ).fetchall()
     if len(rows) == 1:
@@ -229,7 +229,7 @@ def find_player_elo(conn, name, elo_table):
 
 def get_rank(conn, name, match_table):
     r = conn.execute(
-        f"SELECT winner_rank FROM {match_table} WHERE winner_name = ? ORDER BY tourney_date DESC LIMIT 1",
+        f"SELECT winner_rank FROM {match_table} WHERE winner_name = %s ORDER BY tourney_date DESC LIMIT 1",
         (name,)).fetchone()
     if r and r["winner_rank"]:
         try:
