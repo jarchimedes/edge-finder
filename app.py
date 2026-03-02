@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from db import get_db
 from signals import analyze_match
+from db import get_db
 
 load_dotenv()
 
