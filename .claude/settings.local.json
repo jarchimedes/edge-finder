@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3 /Users/minikarl/Desktop/tennis-project/tennis.db \"SELECT MAX\\(tourney_date\\) FROM atp_matches; SELECT MAX\\(tourney_date\\) FROM wta_matches;\")",
+      "Bash(crontab -l 2>/dev/null || echo \"\\(no existing crontab\\)\")",
+      "Bash(crontab -l 2>/dev/null | { cat; echo \"0 2 * * * /usr/bin/python3 /Users/minikarl/Desktop/tennis-project/auto_update.py >> /Users/minikarl/Desktop/tennis-project/auto_update.log 2>&1\"; } | crontab -)"
+    ]
+  }
+}
