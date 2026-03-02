@@ -50,7 +50,7 @@
         <div class="elo-row"><span class="label">Clay</span><span class="value">{{ "%.0f"|format(result.elo_a.clay) }}</span></div>
         <div class="elo-row"><span class="label">Grass</span><span class="value">{{ "%.0f"|format(result.elo_a.grass) }}</span></div>
         {% if result.streak_a %}
-        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_a.startswith('W') else 'streak-cold' }}">{{ result.streak_a }}</span></div>
+        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_a|string|first == 'W' else 'streak-cold' }}">{{ result.streak_a }}</span></div>
         {% endif %}
     </div>
     <div class="vs-divider">VS</div>
@@ -61,7 +61,7 @@
         <div class="elo-row"><span class="label">Clay</span><span class="value">{{ "%.0f"|format(result.elo_b.clay) }}</span></div>
         <div class="elo-row"><span class="label">Grass</span><span class="value">{{ "%.0f"|format(result.elo_b.grass) }}</span></div>
         {% if result.streak_b %}
-        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_b.startswith('W') else 'streak-cold' }}">{{ result.streak_b }}</span></div>
+        <div class="elo-row"><span class="label">Streak</span><span class="value streak {{ 'streak-hot' if result.streak_b|string|first == 'W' else 'streak-cold' }}">{{ result.streak_b }}</span></div>
         {% endif %}
     </div>
 </div>

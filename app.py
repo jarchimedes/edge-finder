@@ -472,10 +472,10 @@ def matchup():
 
             result = {
                 "name_a": name_a, "name_b": name_b,
-                "elo_a": {"overall": pa["elo_overall"], "hard": pa["elo_hard"],
-                          "clay": pa["elo_clay"], "grass": pa["elo_grass"]},
-                "elo_b": {"overall": pb["elo_overall"], "hard": pb["elo_hard"],
-                          "clay": pb["elo_clay"], "grass": pb["elo_grass"]},
+                "elo_a": {"overall": pa["elo_overall"] or 1500, "hard": pa["elo_hard"] or 1500,
+                          "clay": pa["elo_clay"] or 1500, "grass": pa["elo_grass"] or 1500},
+                "elo_b": {"overall": pb["elo_overall"] or 1500, "hard": pb["elo_hard"] or 1500,
+                          "clay": pb["elo_clay"] or 1500, "grass": pb["elo_grass"] or 1500},
                 "prob_overall": prob_overall,
                 "prob_surface": prob_surface,
                 "prob_blended": prob_blended,
@@ -483,8 +483,8 @@ def matchup():
                 "h2h_meetings": h2h_list,
                 "form_a": build_form_display(form_a_raw),
                 "form_b": build_form_display(form_b_raw),
-                "streak_a": _calc_streak(form_a_raw),
-                "streak_b": _calc_streak(form_b_raw),
+                "streak_a": f"{_calc_streak(form_a_raw)['type']}{_calc_streak(form_a_raw)['count']}" if form_a_raw else "",
+                "streak_b": f"{_calc_streak(form_b_raw)['type']}{_calc_streak(form_b_raw)['count']}" if form_b_raw else "",
             }
         conn.close()
 
