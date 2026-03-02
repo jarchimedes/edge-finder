@@ -13,8 +13,8 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 
+from db import get_db
 from signals import analyze_match
-from db import get_conn
 
 load_dotenv()
 
@@ -33,46 +33,6 @@ SURFACE_COL = {"Hard": "elo_hard", "Clay": "elo_clay", "Grass": "elo_grass"}
 
 
 # ── Database ────────────────────────────────────────────────────────────────
-
-def get_db():
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        import psycopg2
-        import psycopg2.extras
-        url = database_url.replace("postgres://", "postgresql://", 1)
-        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
-        conn.autocommit = False
-        return conn
-    else:
-        import re as _re
-        class PgCompatRow(sqlite3.Row):
-            pass
-        class PgCompatConn:
-            """Wraps sqlite3 conn to accept %s placeholders like psycopg2."""
-            def __init__(self, c):
-                self._c = c
-                self.row_factory = c.row_factory
-            def cursor(self):
-                return PgCompatCursor(self._c.cursor())
-            def execute(self, sql, params=()):
-                sql = sql.replace("%s", "?")
-                return self._c.execute(sql, params)
-            def commit(self): self._c.commit()
-            def close(self): self._c.close()
-            def __getattr__(self, name): return getattr(self._c, name)
-        class PgCompatCursor:
-            def __init__(self, c): self._c = c
-            def execute(self, sql, params=()): 
-                sql = sql.replace("%s","?"); return self._c.execute(sql,params)
-            def fetchone(self): return self._c.fetchone()
-            def fetchall(self): return self._c.fetchall()
-            def close(self): self._c.close()
-            @property
-            def description(self): return self._c.description
-            def __iter__(self): return iter(self._c)
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        return PgCompatConn(conn)
 
 
 def init_picks_table():
