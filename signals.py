@@ -302,7 +302,7 @@ def _find_player_name(conn, api_name, match_table):
     if parts:
         last = parts[-1]
         rows = conn.execute(
-            f"SELECT winner_name FROM {match_table} WHERE winner_name LIKE %s COLLATE NOCASE GROUP BY winner_name",
+            f"SELECT winner_name FROM {match_table} WHERE LOWER(winner_name) LIKE LOWER(%s) GROUP BY winner_name",
             (f"%{last}%",)
         ).fetchall()
         if len(rows) == 1:
@@ -334,8 +334,8 @@ def _get_form(conn, player_name, match_table, n=10):
                 UNION ALL
                 SELECT * FROM {match_table} WHERE loser_name = %s
             )
-            ORDER BY tourney_date DESC, CAST(match_num AS INTEGER) DESC
-            LIMIT ?""",
+            ORDER BY tourney_date DESC, COALESCE(NULLIF(match_num, '')::INTEGER, 0) DESC
+            LIMIT %s""",
         (player_name, player_name, n),
     ).fetchall()
     

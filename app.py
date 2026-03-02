@@ -522,7 +522,7 @@ def results():
             f"""SELECT tourney_name, surface, tourney_date, round, score,
                        winner_name, loser_name
                 FROM {table}
-                ORDER BY tourney_date DESC, CAST(match_num AS INTEGER) DESC
+                ORDER BY tourney_date DESC, COALESCE(NULLIF(match_num, '')::INTEGER, 0) DESC
                 LIMIT 50"""
         ).fetchall()
         for r in rows:

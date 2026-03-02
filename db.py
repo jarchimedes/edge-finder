@@ -9,12 +9,17 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 class Row(dict):
-    """Dict that also supports row["col"] and row.col access."""
+    """Dict that supports row["col"], row[0] (positional), and row.col access."""
+    def __init__(self, data):
+        super().__init__(data)
+        self._values = list(data.values())
+
     def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._values[key]
         try:
             return super().__getitem__(key)
         except KeyError:
-            # Try case-insensitive lookup
             lower = {k.lower(): v for k, v in self.items()}
             return lower[key.lower()]
 
