@@ -35,34 +35,75 @@ SURFACE_COL = {"Hard": "elo_hard", "Clay": "elo_clay", "Grass": "elo_grass"}
 # ── Database ────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        import psycopg2
+        import psycopg2.extras
+        url = database_url.replace("postgres://", "postgresql://", 1)
+        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+        conn.autocommit = False
+        return conn
+    else:
+        import re as _re
+        class PgCompatRow(sqlite3.Row):
+            pass
+        class PgCompatConn:
+            """Wraps sqlite3 conn to accept %s placeholders like psycopg2."""
+            def __init__(self, c):
+                self._c = c
+                self.row_factory = c.row_factory
+            def cursor(self):
+                return PgCompatCursor(self._c.cursor())
+            def execute(self, sql, params=()):
+                sql = sql.replace("%s", "?")
+                return self._c.execute(sql, params)
+            def commit(self): self._c.commit()
+            def close(self): self._c.close()
+            def __getattr__(self, name): return getattr(self._c, name)
+        class PgCompatCursor:
+            def __init__(self, c): self._c = c
+            def execute(self, sql, params=()): 
+                sql = sql.replace("%s","?"); return self._c.execute(sql,params)
+            def fetchone(self): return self._c.fetchone()
+            def fetchall(self): return self._c.fetchall()
+            def close(self): self._c.close()
+            @property
+            def description(self): return self._c.description
+            def __iter__(self): return iter(self._c)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return PgCompatConn(conn)
 
 
 def init_picks_table():
     conn = get_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS picks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT DEFAULT (datetime('now')),
-            match_date TEXT,
-            tournament TEXT,
-            tour TEXT,
-            surface TEXT,
-            player_a TEXT,
-            player_b TEXT,
-            bet_type TEXT,
-            bet_description TEXT,
-            odds REAL,
-            units REAL DEFAULT 1,
-            result TEXT DEFAULT 'pending',
-            profit REAL DEFAULT 0,
-            notes TEXT,
-            source TEXT DEFAULT 'self'
-        )
-    """)
-    conn.commit()
+    is_pg = os.environ.get("DATABASE_URL") is not None
+    if is_pg:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS picks (
+                id SERIAL PRIMARY KEY,
+                created_at TEXT DEFAULT (to_char(now(), 'YYYY-MM-DD HH24:MI:SS')),
+                match_date TEXT, tournament TEXT, tour TEXT, surface TEXT,
+                player_a TEXT, player_b TEXT, bet_type TEXT, bet_description TEXT,
+                odds REAL, units REAL DEFAULT 1, result TEXT DEFAULT 'pending',
+                profit REAL DEFAULT 0, notes TEXT, source TEXT DEFAULT 'self'
+            )
+        """)
+        conn.commit()
+        cur.close()
+    else:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS picks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT DEFAULT (datetime('now')),
+                match_date TEXT, tournament TEXT, tour TEXT, surface TEXT,
+                player_a TEXT, player_b TEXT, bet_type TEXT, bet_description TEXT,
+                odds REAL, units REAL DEFAULT 1, result TEXT DEFAULT 'pending',
+                profit REAL DEFAULT 0, notes TEXT, source TEXT DEFAULT 'self'
+            )
+        """)
+        conn.commit()
     conn.close()
 
 
@@ -375,7 +416,7 @@ def add_pick():
     conn.execute("""
         INSERT INTO picks (match_date, tournament, tour, surface, player_a, player_b,
                            bet_type, bet_description, odds, units, notes, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         request.form.get("match_date", ""),
         request.form.get("tournament", ""),
@@ -399,7 +440,7 @@ def add_pick():
 def resolve_pick(pick_id):
     result = request.form.get("result")
     conn = get_db()
-    pick = conn.execute("SELECT * FROM picks WHERE id = ?", (pick_id,)).fetchone()
+    pick = conn.execute("SELECT * FROM picks WHERE id = %s", (pick_id,)).fetchone()
     if pick:
         if result == "win":
             profit = pick["units"] * (pick["odds"] - 1)
@@ -409,7 +450,7 @@ def resolve_pick(pick_id):
             profit = 0
             if result not in ("push", "void"):
                 result = "void"
-        conn.execute("UPDATE picks SET result = ?, profit = ? WHERE id = ?",
+        conn.execute("UPDATE picks SET result = %s, profit = %s WHERE id = %s",
                      (result, profit, pick_id))
         conn.commit()
     conn.close()
